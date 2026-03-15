@@ -6,7 +6,7 @@ using UnityEngine;
 /// <summary>
 /// 発射前に弾道を予測するスクリプト
 /// </summary>
-public class AimPreview : MonoBehaviour
+public class TrajectoryPreview : MonoBehaviour
 {
     #region 変数の宣言
     //予測線の最大距離
@@ -14,20 +14,19 @@ public class AimPreview : MonoBehaviour
     //反射するオブジェクトのレイヤー
     [SerializeField] LayerMask reflectLayer;
     //無限ループ防止用の反射回数上限
-    [SerializeField] int safetyLimit = 100;
-    //LineRendererを入れる変数line
+    [SerializeField] int safetyLimit = 100; //UnityのInspectorで変更が必要か？
+
     private LineRenderer line;
-    //線の太さ
+
     [SerializeField] float lineWidth = 0.05f;
-    //線のマテリアルを入れる変数
+
     [SerializeField] Material lineMaterial;
 
-    Bullet bullet; //Bulletを入れる変数
+    Bullet bullet; 
     #endregion
 
     void Start()
     {
-        //lineにLineRendererを入れる
         line = GetComponent<LineRenderer>();
         //lineがnullならこのスクリプトを無効化して処理を止める
         if (line == null)
@@ -36,7 +35,7 @@ public class AimPreview : MonoBehaviour
             enabled = false;
             return;
         }
-        line.positionCount = 1; // 頂点の数
+        line.positionCount = 1; // 頂点の数 ？？　これは位置じゃなくて頂点？
         line.startWidth = lineWidth; //中心の線の太さ
         line.endWidth = lineWidth; //外側の線の太さ
         line.material = lineMaterial; //線を表示するマテリアルの設定
@@ -55,16 +54,16 @@ public class AimPreview : MonoBehaviour
     /// <summary>
     /// 弾道予測線を描く
     /// </summary>
-    /// <param name="startPos"></param>
-    /// <param name="direction"></param>
+    /// <param name="startPos">開始位置</param>
+    /// <param name="direction">方向</param>
     void DrawReflectionPath(Vector3 startPos, Vector3 direction)
     {
         line.positionCount = 1; //頂点の個数
         line.SetPosition(0, startPos); //始点の位置を設定
         int reflectionCount = 0; //反射回数を記録
 
-        Vector3 currentPos = startPos; //位置の引数をcurrentPosに入れる
-        Vector3 currentDir = direction; //方向の引数をcurrentDirに入れる
+        Vector3 currentPos = startPos; //位置の引数をcurrentPosに入れる //何のcurrent位置かもっとわかりやすい名前にしたほうがいい
+        Vector3 currentDir = direction; //方向の引数をcurrentDirに入れる //何のcurrent方向かもっとわかりやすい名前にしたほうがいい
 
         //ループ防止上限より反射数が少ない間繰り返す
         while (reflectionCount < safetyLimit)
@@ -74,12 +73,12 @@ public class AimPreview : MonoBehaviour
             {
                 //当たったオブジェクトの親からMirrorスクリプトを取得
                 Mirror mirror = hit.collider.GetComponentInParent<Mirror>();
-                //頂点数を増やす
+                //点の位置を増やす？
                 line.positionCount++;
                 //最後の点に直線が当たった場所を入れ、そこまで線を引く
                 line.SetPosition(line.positionCount - 1, hit.point);
 
-                currentDir = mirror.GetRflectVectol(currentDir, hit.normal); //currentDirに反射ベクトルを入れる
+                currentDir = mirror.GetReflectedVector(currentDir, hit.normal); //currentDirに反射ベクトルを入れる
                 currentPos = hit.point; //currentPosに当たった場所を入れる
 
                 //反射した回数を増やす

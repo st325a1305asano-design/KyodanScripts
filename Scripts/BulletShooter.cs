@@ -9,22 +9,21 @@ using UnityEngine.InputSystem;
 public class BulletShooter : MonoBehaviour
 {
     #region 変数の宣言
-    [SerializeField] GameObject bulletPrefab; //弾丸のプレハブを入れる変数
+    [SerializeField] GameObject bulletPrefab; 
     [SerializeField] Transform firePoint; //弾丸の生成位置
     [SerializeField] int ammo = 3; //残弾数
 
-    PlayerInput playerInput; //PlayerInputを入れる変数
-    GameObject currentBullet; //生成した弾丸を入れる変数
+    PlayerInput playerInput; 
+    GameObject currentBullet; 
+
     #endregion
     public int Ammo { get; private set; }
 
     void Start()
     {
-        //PlayerInputを入れる
         playerInput = FindAnyObjectByType<PlayerInput>();
-
-        SpawnBullet(); //弾丸を生成する
-        GameManager.Instance.UpdateAmmo(ammo); //残弾数表示を更新
+        SpawnBullet(); 
+        GameManager.Instance.UpdateAmmoText(ammo); //残弾数表示を更新
     }
 
     void Update()
@@ -38,17 +37,15 @@ public class BulletShooter : MonoBehaviour
 
     #region 生成と発射
     /// <summary>
-    /// 弾丸の生成をする関数
+    /// 弾丸の生成をする処理
+     ///
     /// </summary>
     void SpawnBullet()
     {
         //残弾数が0なら
         if (ammo == 0)
         {
-            //ゲームオーバー画面の表示
-            GameManager.Instance.ShowGameOverPanel();
-            GameManager.Instance.SwitchActionMaps("UI");
-
+            GameManager.Instance.GameOverProcess();
             return;
         }
 
@@ -59,12 +56,13 @@ public class BulletShooter : MonoBehaviour
         currentBullet.GetComponent<Bullet>().Stop();
         //Bulletスクリプトにこのスクリプトを渡す
         currentBullet.GetComponent<Bullet>().SetShooter(this);
+        
         Debug.Log("弾が生成されました");
 
     }
 
     /// <summary>
-    /// 弾丸の発射をする関数
+    /// 弾丸の発射をする処理
     /// </summary>
     void Fire()
     {
@@ -84,13 +82,13 @@ public class BulletShooter : MonoBehaviour
             ammo--;
 
             //残弾数表示を更新
-            GameManager.Instance.UpdateAmmo(ammo);
+            GameManager.Instance.UpdateAmmoText(ammo);
         }
     }
     #endregion
 
     /// <summary>
-    /// 弾丸が壊れた時に呼び出される関数
+    /// 弾丸が壊れた時に呼び出される
     /// </summary>
     public void OnBulletDestroyed()
     {
@@ -101,10 +99,19 @@ public class BulletShooter : MonoBehaviour
     /// <summary>
     /// 残弾数を0にする
     /// </summary>
-    public void ZeroAmmo()
+    public void EmptyAmmo()
     {
         ammo = 0;
-        SpawnBullet();
-        GameManager.Instance.UpdateAmmo(ammo);
+        GameManager.Instance.UpdateAmmoText(ammo);
+        //ここでわざわざSpawnBulletを呼ぶ必要はないと思う。
+        //直接ゲームオーバー処理を呼ぶようにすればいい。
+        GameManager.Instance.GameOverProcess();
+ 
+    }
+
+    //弾丸を打てるかどうかを確認するメソッドを追加した方がいいと思う
+    public bool CanShoot()
+    {
+        return ammo > 0;
     }
 }
