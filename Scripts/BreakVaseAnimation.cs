@@ -8,16 +8,26 @@ using UnityEngine;
 public class BreakVaseAnimation : MonoBehaviour
 {
     #region 変数の宣言
-    [SerializeField] GameObject Vase_Normal; //通常状態の花瓶を入れる変数
-    [SerializeField] GameObject Vase_Break; //壊れた状態の花瓶を入れる変数
-    [SerializeField] float explosionForce = 200f; //飛ばす強さ
-    [SerializeField] float explosionRadius = 2f; //効果範囲(半径)
+    [SerializeField] GameObject vaseNormal; //通常状態の花瓶を入れる変数 //camelCaseに統一した方がいい
+                           //normalVase, brokenVase の方が英語的に正しい
+    [SerializeField] GameObject vaseBroken; //壊れた状態の花瓶を入れる変数
+    [SerializeField] float explosionForce = 200f; 
+    [SerializeField] float explosionRadius = 2f; 
     #endregion
 
     void Start()
     {
-        Vase_Normal.SetActive(true); //通常状態の花瓶を表示する
-        Vase_Break.SetActive(false); //壊れた状態の花瓶を非表示にする
+        Initialize();  
+    }
+
+    /// <summary>
+    /// 初期化
+    /// </summary>
+    void Initialize()
+    {
+        //初期化
+        vaseNormal.SetActive(true); //通常状態の花瓶を表示する
+        vaseBroken.SetActive(false); //壊れた状態の花瓶を非表示にする
     }
 
     #region 爆散処理
@@ -27,17 +37,16 @@ public class BreakVaseAnimation : MonoBehaviour
 
     public void Break()
     {
-        Vase_Normal.SetActive(false); //通常状態の花瓶を非表示にする
-        Vase_Break.SetActive(true); //壊れた状態の花瓶を表示する
+        vaseNormal.SetActive(false); //通常状態の花瓶を非表示にする
+        vaseBroken.SetActive(true); //壊れた状態の花瓶を表示する
 
-        //壊れた花瓶の子にあるRigidBodyをすべて変数rbに入れる
-        foreach (Rigidbody rb in Vase_Break.GetComponentsInChildren<Rigidbody>())
+        foreach (Rigidbody rb in vaseBroken.GetComponentsInChildren<Rigidbody>())
         {
             //現在の座標から半径explosionRadiusの範囲にある変数rbをexplosionForceの強さで吹っ飛ばす
             rb.AddExplosionForce(explosionForce, transform.position, explosionRadius);
         }
 
-        StartCoroutine(RemovePiece()); //コルーチンを呼び出す
+        StartCoroutine(RemovePiece()); //破片の物理演算を止めるコルーチンを呼び出す
     }
 
     /// <summary>
@@ -47,13 +56,15 @@ public class BreakVaseAnimation : MonoBehaviour
 
     IEnumerator RemovePiece()
     {
+
+        #if UNITY_EDITOR
         //デバッグ用
-        Debug.Log("コルーチンが呼ばれました");
+        Debug.Log("RemovePieceコルーチンが呼ばれました");
+        #endif
 
         yield return new WaitForSeconds(3f); //3秒待つ
 
-        //壊れた花瓶の子にあるRigidBodyをすべて変数rbに入れる
-        foreach (Rigidbody rb in Vase_Break.GetComponentsInChildren<Rigidbody>())
+        foreach (Rigidbody rb in vaseBroken.GetComponentsInChildren<Rigidbody>())
         {
             rb.isKinematic = true; //物理演算停止
         }

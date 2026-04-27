@@ -146,6 +146,7 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public void ChangeGameState(int index)
     {
+
         if (index == 1)
         {
             gameState = GameState.Playing;
@@ -158,14 +159,7 @@ public class GameManager : MonoBehaviour
 
     public bool IsPlaying()
     {
-        if (gameState == GameState.Playing)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        return gameState == GameState.Playing;
     }
     
     #region UI管理
@@ -174,7 +168,7 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public void ShowClearPanel()
     {
-        ChangeGameState(2);
+        ChangeGameState(2); //マジックナンバーやないかい
         clearPanel.SetActive(true); 
         SwitchActionMaps("UI");
         SetCurrentButton(clearNext);
@@ -195,7 +189,7 @@ public class GameManager : MonoBehaviour
     /// 残弾数を表示する関数
     /// </summary>
     /// <param name="ammo"></param>
-    public void UpdateAmmo(int ammo)
+    public void UpdateAmmoText(int ammo)
     {
         if (ammo >= 0)
         {
@@ -237,6 +231,15 @@ public class GameManager : MonoBehaviour
         {
             modeText.SetActive(false);
         }
+    }
+
+/// <summary>
+/// ゲームオーバー処理
+/// </summary>
+    public void GameOverProcess()
+    {   
+            ShowGameOverPanel();
+            SwitchActionMaps("UI");
     }
     /// <summary>
     /// 設定パネルの表示非表示関数

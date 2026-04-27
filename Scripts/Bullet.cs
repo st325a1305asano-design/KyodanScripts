@@ -20,26 +20,25 @@ public class Bullet : MonoBehaviour
     private float traveledDistance = 0f;
 
     //弾発射のフラグ
-    private bool isLaunched = false;
-    //BulletShooterを入れる変数
-    BulletShooter shooter;
+    private bool isLaunched = false; 
+    //発射されたが、途中で止まった場合それは isLaunchedだけど移動中ではない状態になる　この状態をどう表すかは要検討
+
+    BulletShooter bulletShooter;
     PlayerInput playerInput;
     #endregion
 
     /// <summary>
-    /// 弾生成時に呼ばれる。shooterにBulletShooterを入れる
+    /// BulletShooterの設定 --> 生成時に呼ばれるという書き方は誤解は招くかも
     /// </summary>
     /// <param name="s"></param>
     public void SetShooter(BulletShooter s)
     {
-        shooter = s;
+        bulletShooter = s;
     }
 
     void Start()
-    {
-        //進行方向の設定
+    {    
         direction = transform.forward;
-
         playerInput = FindAnyObjectByType<PlayerInput>();
     }
 
@@ -48,7 +47,6 @@ public class Bullet : MonoBehaviour
         //弾が発射状態じゃない　または　プレイ状態じゃないなら処理を止める
         if (!isLaunched || !GameManager.Instance.IsPlaying()) return;
 
-        //弾丸の進行の関数を呼び出す
         MoveBullet();
     }
 
@@ -58,7 +56,7 @@ public class Bullet : MonoBehaviour
     /// </summary>
     public void Stop()
     {
-        isLaunched = false;
+        isLaunched = false; //要検討
     }
 
     /// <summary>
@@ -66,25 +64,24 @@ public class Bullet : MonoBehaviour
     /// </summary>
     public void Launch()
     {
-        isLaunched = true;
+        isLaunched = true; //要検討
     }
     #endregion
 
     /// <summary>
-    /// BulletShooterに破壊を通知する
+    /// BulletShooterに弾がDestroyされたことを通知する
     /// </summary>
-    public void NoticeBreak()
+    public void NotifyOnBulletDestroyed() 
     {
         //shooterがあるなら
-        if (shooter != null)
+        if (bulletShooter != null)
         {
-            //shooterのOnBulletDestroyedを呼び出す
-            shooter.OnBulletDestroyed();
+            bulletShooter.OnBulletDestroyed();
         }
     }
 
     /// <summary>
-    /// 弾丸の進行関数
+    /// 弾を動かす処理
     /// </summary>
     public void MoveBullet()
     {
@@ -98,7 +95,7 @@ public class Bullet : MonoBehaviour
             Destroy(gameObject);
 
             //弾の破壊通知を送る
-            NoticeBreak();
+            NotifyOnBulletDestroyed();
             return;
         }
 
@@ -106,40 +103,41 @@ public class Bullet : MonoBehaviour
         Ray ray = new Ray(transform.position, direction);
 
         //一定距離まで伸びる光線が何かが当たったなら
+        //ifの処理が長くて、読みづらいから、各タグに応じてメソッドを用意してください
         if (Physics.Raycast(ray, out RaycastHit hit, moveDistance))
         {
             //衝突点まで移動
             transform.position = hit.point;
 
-            //ぶつかった相手の親にMirrorのコンポーネントがあるならmirrorに入れる
+            //ぶつかった相手の親にMirrorのコンポーネントがあるなら取得する
             Mirror mirror = hit.collider.GetComponentInParent<Mirror>();
             if (mirror != null)
             {
                 //反射方向をMirrorスクリプトから取得
-                direction = mirror.GetRflectVectol(direction, hit.normal);
+                direction = mirror.GetReflectedVector(direction, hit.normal);
                 transform.forward = direction;
             }
             //当たったオブジェクトのタグが花瓶なら
             else if (hit.collider.gameObject.CompareTag("Vase"))
             {
                 Debug.Log("Vaseに触れました");
+
                 //BreakVaseAnimationを取得
                 BreakVaseAnimation breakVaseAnimation = hit.collider.gameObject.GetComponentInParent<BreakVaseAnimation>();
-                //breakVaseAnimationがnullじゃないなら
+
                 if (breakVaseAnimation != null)
                 {
-                    //breakVaseAnimationの中のBreak関数を呼び出す
                     breakVaseAnimation.Break();
                 }
 
                 //破壊SEを再生
-                SEManager.Instance.PlaySE(1);
+                SEManager.Instance.PlaySE(1); //破壊ＳＥのEnumなり、変数なり用意した方がいいよ
 
                 //チュートリアルの時
-                if (SceneManager.GetActiveScene().buildIndex == 2)
+                if (SceneManager.GetActiveScene().buildIndex == 2) //出た！マジックナンバー　Enumsでシーン管理した方がいい
                 {
                     //ステージ進行
-                    TutorialManager.Instance.PlusNumber();
+                    TutorialManager.Instance.PlusNumber(); //PlusNumber()じゃなくてNextStage()とかの方がわかりやすいかも
                 }
                 else
                 {
@@ -151,24 +149,28 @@ public class Bullet : MonoBehaviour
             else if (hit.collider.gameObject.CompareTag("Character"))
             {
                 //被弾音を再生
-                SEManager.Instance.PlaySE(2);
+                SEManager.Instance.PlaySE(2); //上記と一緒
 
                 //チュートリアルのとき
-                if (SceneManager.GetActiveScene().buildIndex == 2)
+                if (SceneManager.GetActiveScene().buildIndex == 2) //上記と一緒
                 {
-                    //ゲームオーバー画面表示
                     GameManager.Instance.ShowGameOverPanel();
 
-                    //このオブジェクトを壊す
                     Destroy(gameObject);
 
-                    //弾の破壊通知を送る
-                    NoticeBreak();
+                    //弾のDestroy通知を送る
+                    NotifyOnBulletDestroyed();
                 }
-                else if (shooter.Ammo > 0)
+                //ここの説明をもう少し詳しく書いた方がいいかも　
+                // 弾が当たったときの処理の流れがわかりにくい
+                else if (bulletShooter.Ammo > 0) 
                 {
-                    //弾数をゼロにする
-                    shooter.ZeroAmmo();
+                    //弾数をゼロにする --> ゲームオーバーになるならその処理を直接呼べば？
+                    GameManager.Instance.GameOverProcess();
+                    //ゲームオーバー時に弾数をゼロにする処理も呼ぶなら、
+                    //GameOverProcessの中で中身とＵＩ両方0に設定する
+
+                    //bulletShooter.ZeroAmmo(); //ＺｅｒｏＡｍｍｏのメソッド名は変更した方がいい。わかりにくい。
                 }
             }
             else
@@ -180,10 +182,10 @@ public class Bullet : MonoBehaviour
                 Destroy(gameObject);
 
                 //弾の破壊通知を送る
-                NoticeBreak();
+                NotifyOnBulletDestroyed();
             }
         }
-        //何にも当たらなけらば
+        //何にも当たらなければ
         else
         {
             //前進
